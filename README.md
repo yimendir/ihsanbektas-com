@@ -1,49 +1,35 @@
-# İhsan Bektaş - SEO Odakli Tanitim Sitesi
+# İhsan Bektaş
 
-Bu proje, yerel bolgeye hitap eden SEO odakli emlak tanitim sitesi iskeletidir.
+Bu repo, `ihsanbektaş.com` sitesinin statik kaynaklarını ve deploy ayarlarını içerir.
 
 ## Dosyalar
-- `index.html`: Ana sayfa (daha kisa, odakli landing deneyimi)
-- `ilanlar.html`: Ayrı ilan sayfasi (harita, filtre ve kart-pin senkronizasyonu)
-- `yatirim-rehberi.html`: Blog tarzı yatırım rehberi (mahalle bazlı içerik + resmi kaynak linkleri)
-- `styles.css`: Responsive tasarim + animasyonlar + UI stilleri
-- `script.js`: Scroll animasyonlari, sayaçlar, harita ve AI chat etkileşimi
-- `robots.txt`: Arama motoru yonlendirmesi
-- `sitemap.xml`: Site haritasi
+- `index.html`: Ana sayfa
+- `ilanlar.html`: İlan sayfası
+- `yatirim-rehberi.html`: Yatırım rehberi sayfası
+- `admin.html`: İlan yönetim paneli
+- `styles.css`: Responsive tasarım ve UI stilleri
+- `script.js`: Harita, filtre ve panel etkileşimleri
+- `robots.txt`: Arama motoru yönlendirmesi
+- `sitemap.xml`: Site haritası
+- `vercel.json`: Vercel yönlendirme ayarları
 
-## Yeni Arayuz Bilesenleri
-- Hero alani: animasyonlu metrik kartlari
-- Basari Hikayeleri: sosyal kanit kartlari
-- Harita bolumu: ilce filtresi + ilan pinleri + kart-pin senkronizasyonu
-- Harita popup: tek tikla tam ekran harita (ESC veya overlay tik ile kapanir)
-- Ilan katalogu: net kart gorunumu + mini filtre (ilce ve tur)
-- AI Asistan (demo): ziyaretci sorularina hizli cevap arayuzu
-- Yatırım Rehberi: Babaeski ve Lüleburgaz mahalle kartlari + TrakyaKA / belediye kaynaklari
+## Çalışma Şekli
+1. Kod değişiklikleri yerelde yapılır.
+2. `git commit` ile kaydedilir.
+3. `git push` ile GitHub'a gönderilir.
+4. Vercel bu repo üzerinden otomatik deploy eder.
 
-## Harita Ilan Verisi
-- Ornek ilanlar `script.js` icindeki `sampleListings` dizisinde tutulur.
-- Her ilan icin su alanlar vardir: `id`, `district`, `type`, `title`, `price`, `size`, `area`, `summary`, `image`, `coords`.
-- `coords` alani `[enlem, boylam]` formatindadir.
-- `image` alanina gorsel URL'i yazildiginda kartta dogrudan fotograf gosterilir.
-- Ilce filtreleri `districtViews` ve butonlardaki `data-district` degerleri ile eslesir.
+## Veri Kaynağı
+- İlanlar `script.js` içindeki `DEFAULT_LISTINGS` içinde tutulur.
+- Harita verisi ve admin paneli tarayıcı içinde çalışır.
+- Uzun vadede gerçek veri gerekiyorsa bunu API veya veritabanına taşımak gerekir.
 
-## Yayin Oncesi Zorunlu Duzenlemeler
-`index.html` ve `ilanlar.html` icinde su placeholder alanlarini gercek degerlerle degistirin:
-- `ornekdomain.com` alan adlari
-- `+90 5XX XXX XX XX` telefon numarasi
-- `info@ornekdomain.com` e-posta ve sosyal medya linkleri
-- Sosyal medya linkleri
-- Profil fotografinizi `assets/ihsan-bektas.jpg` olarak ekleyin
+## Notlar
+- Admin paneldeki oturum koruması demo seviyesindedir.
+- Gerçek gizli veri veya yetkilendirme gerekiyorsa sunucu tarafı kurulum yapalım.
 
-## Teknik SEO Notlari
-- Canonical etiketi tanimli.
-- Open Graph ve Twitter kart etiketleri tanimli.
-- `RealEstateAgent` JSON-LD schema tanimli.
-- `robots.txt` ve `sitemap.xml` baglantili.
-- Basliklar (`h1`, `h2`) ve icerik hiyerarsisi SEO uyumlu.
-
-## Hizli Yerel SEO Guclendirme
-- Google Business Profile olusturup ad, adres, telefon (NAP) bilgisini siteyle birebir ayni tutun.
-- Kırklareli geneli icin ilce bazli landing sayfalari acin (ornek: `/babaeski-satilik-daire`, `/luleburgaz-kiralik-daire`).
-- Musteri yorumlarini ve portfoy guncellemelerini haftalik yayinlayin.
-- Sayfa gorsellerini WebP formatinda ve `alt` metinlerle kullanin.
+## Teknik SEO
+- Canonical etiketleri tanımlı.
+- Open Graph ve Twitter kart etiketleri tanımlı.
+- `RealEstateAgent` JSON-LD schema tanımlı.
+- `robots.txt` ve `sitemap.xml` bağlı.
