@@ -27,6 +27,11 @@ Bu repo, `ihsanbektaş.com` sitesinin statik kaynaklarını ve deploy ayarların
 ## Notlar
 - Admin paneldeki oturum koruması demo seviyesindedir.
 - Gerçek gizli veri veya yetkilendirme gerekiyorsa sunucu tarafı kurulum yapalım.
+- İlanların kalıcı kaydı için Vercel ortam değişkenleri gerekir:
+  - `GITHUB_OWNER=yimendir`
+  - `GITHUB_REPO=ihsanbektas-com`
+  - `GITHUB_BRANCH=main`
+  - `GITHUB_TOKEN=<repo contents yazma yetkili token>`
 
 ## Teknik SEO
 - Canonical etiketleri tanımlı.

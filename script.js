@@ -43,6 +43,7 @@ const districtViews = {
 const LISTING_STORAGE_KEY = "emlak_agent_listings_v1";
 const ADMIN_SESSION_KEY = "emlak_agent_admin_session";
 const ADMIN_PASSWORD = "ib2026";
+const LISTINGS_API_PATH = "/api/listings";
 const DEFAULT_LISTINGS = [
   {
     id: "bbk-001",
@@ -96,7 +97,9 @@ const DEFAULT_LISTINGS = [
   }
 ];
 
-let listingsData = loadListings();
+let listingsData = sanitizeListingArray(DEFAULT_LISTINGS);
+let listingsSource = "fallback";
+let listingsReady = false;
 
 function createFallbackListing() {
   return {
@@ -195,7 +198,7 @@ function sanitizeListingArray(items) {
   return items.map(sanitizeListing);
 }
 
-function loadListings() {
+function loadListingsFromStorage() {
   try {
     const raw = window.localStorage.getItem(LISTING_STORAGE_KEY);
     if (!raw) return sanitizeListingArray(DEFAULT_LISTINGS);
@@ -207,7 +210,7 @@ function loadListings() {
   }
 }
 
-function saveListings(nextListings) {
+function saveListingsToStorage(nextListings) {
   listingsData = sanitizeListingArray(nextListings);
   try {
     window.localStorage.setItem(LISTING_STORAGE_KEY, JSON.stringify(listingsData));
@@ -218,6 +221,42 @@ function saveListings(nextListings) {
 
 function getListings() {
   return listingsData;
+}
+
+async function loadListingsFromApi() {
+  try {
+    const response = await fetch(LISTINGS_API_PATH, { cache: "no-store" });
+    if (!response.ok) return null;
+    const payload = await response.json();
+    if (!payload || !Array.isArray(payload.items)) return null;
+    listingsSource = payload.source || "github";
+    return sanitizeListingArray(payload.items);
+  } catch (error) {
+    return null;
+  }
+}
+
+async function persistListings(nextListings) {
+  const clean = sanitizeListingArray(nextListings);
+  listingsData = clean;
+  saveListingsToStorage(clean);
+
+  try {
+    const response = await fetch(LISTINGS_API_PATH, {
+      method: "PUT",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ items: clean })
+    });
+    if (response.ok) {
+      listingsSource = "github";
+      return true;
+    }
+  } catch (error) {
+    // Keep localStorage fallback.
+  }
+
+  listingsSource = "storage";
+  return false;
 }
 
 const mapStates = {
@@ -1202,7 +1241,7 @@ function importListingsFromFile(file) {
         setAdminMessage("Dosyada geçerli ilan bulunamadı.", "error");
         return;
       }
-      saveListings(cleaned);
+      persistListings(cleaned);
       renderAdminTable();
       refreshListingViews();
       setAdminMessage("İlanlar içe aktarıldı.", "success");
@@ -1318,7 +1357,7 @@ function initAdminPanel() {
         setAdminMessage("Yeni ilan eklendi.", "success");
       }
 
-      saveListings(nextItems);
+      persistListings(nextItems);
       renderAdminTable();
       refreshListingViews();
       listingForm.reset();
@@ -1380,7 +1419,7 @@ function initAdminPanel() {
       if (action === "delete") {
         const ok = window.confirm(`"${target.title}" ilanını silmek istiyor musun?`);
         if (!ok) return;
-        saveListings(items.filter((item) => item.id !== listingId));
+        persistListings(items.filter((item) => item.id !== listingId));
         renderAdminTable();
         refreshListingViews();
         setAdminMessage("İlan silindi.", "success");
@@ -1412,9 +1451,22 @@ function initAdminPanel() {
   }
 }
 
-populateCatalogDistrictOptions();
-initListingMap();
-initCatalog();
-initHeroMap();
-initSpotlightCarousel();
-initAdminPanel();
+async function bootstrapListings() {
+  const apiListings = await loadListingsFromApi();
+  if (apiListings && apiListings.length) {
+    listingsData = apiListings;
+    saveListingsToStorage(apiListings);
+  } else {
+    listingsData = loadListingsFromStorage();
+  }
+
+  listingsReady = true;
+  populateCatalogDistrictOptions();
+  initListingMap();
+  initCatalog();
+  initHeroMap();
+  initSpotlightCarousel();
+  initAdminPanel();
+}
+
+bootstrapListings();
