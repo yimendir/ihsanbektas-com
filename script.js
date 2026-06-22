@@ -1020,6 +1020,12 @@ function setAdminMessage(message, kind) {
   if (kind === "error") adminStatus.classList.add("is-error");
 }
 
+function getListingsSourceLabel() {
+  if (listingsSource === "github") return "Kalıcı kayıt: GitHub";
+  if (listingsSource === "storage") return "Geçici kayıt: tarayıcı belleği";
+  return "Yedek kayıt: yerel veri";
+}
+
 function setLatLngInputs(lat, lng) {
   if (!listingForm) return;
   listingForm.elements.lat.value = Number(lat).toFixed(6);
@@ -1178,6 +1184,19 @@ function renderAdminTable() {
     .join("");
 }
 
+function updateAdminSourceHint() {
+  if (!adminStatus) return;
+  if (listingsSource === "github") {
+    setAdminMessage("İlanlar GitHub'a yazılıyor.", "success");
+    return;
+  }
+  if (listingsSource === "storage") {
+    setAdminMessage("Uyarı: İlanlar sadece tarayıcıda duruyor, kalıcı kayda geçmedi.", "error");
+    return;
+  }
+  setAdminMessage("İlanlar yedek veriden yükleniyor.", "");
+}
+
 function getAdminSession() {
   try {
     return window.sessionStorage.getItem(ADMIN_SESSION_KEY) === "1";
@@ -1233,7 +1252,7 @@ function readListingFormValues() {
 function importListingsFromFile(file) {
   if (!file) return;
   const reader = new FileReader();
-  reader.onload = () => {
+  reader.onload = async () => {
     try {
       const parsed = JSON.parse(String(reader.result || "[]"));
       const cleaned = sanitizeListingArray(parsed);
@@ -1241,10 +1260,13 @@ function importListingsFromFile(file) {
         setAdminMessage("Dosyada geçerli ilan bulunamadı.", "error");
         return;
       }
-      persistListings(cleaned);
+      const saved = await persistListings(cleaned);
       renderAdminTable();
       refreshListingViews();
-      setAdminMessage("İlanlar içe aktarıldı.", "success");
+      setAdminMessage(
+        saved ? "İlanlar içe aktarıldı ve kalıcı depoya yazıldı." : "İlanlar içe aktarıldı ama kalıcı depoya yazılamadı.",
+        saved ? "success" : "error"
+      );
     } catch (error) {
       setAdminMessage("JSON dosyası okunamadı.", "error");
     }
@@ -1351,13 +1373,11 @@ function initAdminPanel() {
       const nextItems = [...items];
       if (existingIndex >= 0) {
         nextItems[existingIndex] = nextListing;
-        setAdminMessage("İlan güncellendi.", "success");
       } else {
         nextItems.unshift(nextListing);
-        setAdminMessage("Yeni ilan eklendi.", "success");
       }
 
-      persistListings(nextItems);
+      const saved = await persistListings(nextItems);
       renderAdminTable();
       refreshListingViews();
       listingForm.reset();
@@ -1365,6 +1385,16 @@ function initAdminPanel() {
       if (adminMapHint) {
         adminMapHint.textContent = "Haritaya tıkla veya marker'ı sürükle.";
       }
+      setAdminMessage(
+        saved
+          ? existingIndex >= 0
+            ? "İlan güncellendi ve kalıcı depoya yazıldı."
+            : "Yeni ilan eklendi ve kalıcı depoya yazıldı."
+          : existingIndex >= 0
+            ? "İlan güncellendi ama kalıcı depoya yazılamadı."
+            : "Yeni ilan eklendi ama kalıcı depoya yazılamadı.",
+        saved ? "success" : "error"
+      );
     });
   }
 
@@ -1419,10 +1449,13 @@ function initAdminPanel() {
       if (action === "delete") {
         const ok = window.confirm(`"${target.title}" ilanını silmek istiyor musun?`);
         if (!ok) return;
-        persistListings(items.filter((item) => item.id !== listingId));
+        const saved = await persistListings(items.filter((item) => item.id !== listingId));
         renderAdminTable();
         refreshListingViews();
-        setAdminMessage("İlan silindi.", "success");
+        setAdminMessage(
+          saved ? "İlan silindi ve kalıcı depoya yazıldı." : "İlan silindi ama kalıcı depoya yazılamadı.",
+          saved ? "success" : "error"
+        );
       }
     });
   }
@@ -1458,6 +1491,7 @@ async function bootstrapListings() {
     saveListingsToStorage(apiListings);
   } else {
     listingsData = loadListingsFromStorage();
+    listingsSource = "storage";
   }
 
   listingsReady = true;
@@ -1467,6 +1501,7 @@ async function bootstrapListings() {
   initHeroMap();
   initSpotlightCarousel();
   initAdminPanel();
+  updateAdminSourceHint();
 }
 
 bootstrapListings();
