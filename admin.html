@@ -1,0 +1,225 @@
+<!doctype html>
+<html lang="tr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" type="image/png" sizes="48x48" href="/favicon.png" />
+    <link rel="shortcut icon" href="/favicon.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <title>Admin Panel | İhsan Bektaş Emlak</title>
+    <meta name="robots" content="noindex, nofollow" />
+    <link rel="canonical" href="https://www.xn--ihsanbekta-n9b.com/admin" />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&amp;family=Fraunces:opsz,wght@9..144,600;9..144,700&amp;display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+      integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+      crossorigin=""
+    />
+    <link rel="stylesheet" href="styles.css?v=20260425b" />
+  </head>
+
+  <body>
+    <a class="skip-link" href="#icerik">İçeriğe geç</a>
+
+    <header class="site-header">
+      <div class="container nav-wrap">
+        <a class="brand" href="index.html">
+          <span class="brand-badge brand-avatar-badge">
+            <img
+              class="brand-avatar"
+              src="assets/ihsan-bektas.jpg"
+              alt="İhsan Bektaş profil fotoğrafı"
+              loading="lazy"
+              onerror="this.remove()"
+            />
+            <span class="brand-initials" aria-hidden="true">İB</span>
+          </span>
+          <span>İhsan Bektaş</span>
+        </a>
+        <nav aria-label="Ana menü">
+          <ul class="nav-list">
+            <li><a href="index.html">Anasayfa</a></li>
+            <li><a href="ilanlar.html">İlanlar</a></li>
+            <li><a href="yatirim-rehberi.html">Yatırım Rehberi</a></li>
+            <li><a href="admin.html">Admin</a></li>
+          </ul>
+        </nav>
+      </div>
+    </header>
+
+    <main id="icerik" class="section">
+      <div class="container admin-shell">
+        <div id="adminLoginCard" class="admin-login-card">
+          <p class="eyebrow">Yönetim Ekranı</p>
+          <h1>İlan Paneli Girişi</h1>
+          <p class="lead">Bu panelden ilan ekleyebilir, düzenleyebilir ve silebilirsin.</p>
+          <form id="adminLoginForm" class="admin-login-form" autocomplete="off">
+            <label for="adminPassword">Şifre</label>
+            <input id="adminPassword" name="adminPassword" type="password" required />
+            <button type="submit" class="btn btn-primary">Giriş Yap</button>
+            <p id="adminError" class="admin-error" role="alert"></p>
+            <p class="admin-help">Not: Varsayılan şifre `ib2026` (script.js içinden değiştirilebilir).</p>
+          </form>
+        </div>
+
+        <section id="adminPanel" class="admin-panel" hidden>
+          <div class="admin-panel-head">
+            <div>
+              <p class="eyebrow">Panel</p>
+              <h2>İlan Yönetimi</h2>
+            </div>
+            <div class="admin-head-actions">
+              <div class="admin-stat">
+                <span id="listingCountStat">0</span>
+                <small>Toplam ilan</small>
+              </div>
+              <button id="adminLogoutBtn" type="button" class="btn btn-ghost">Çıkış</button>
+            </div>
+          </div>
+
+          <p id="adminStatus" class="admin-status" aria-live="polite"></p>
+
+          <div class="admin-grid">
+            <form id="listingForm" class="admin-form" autocomplete="off">
+              <input type="hidden" id="id" name="id" />
+
+              <label for="title">Başlık</label>
+              <input id="title" name="title" type="text" required />
+
+              <div class="admin-form-row">
+                <label>
+                  İlçe
+                  <select id="district" name="district" required>
+                    <option value="babaeski">Babaeski</option>
+                    <option value="luleburgaz">Lüleburgaz</option>
+                    <option value="kirklareli">Kırklareli</option>
+                  </select>
+                </label>
+                <label>
+                  Tür
+                  <select id="type" name="type" required>
+                    <option value="Satılık">Satılık</option>
+                    <option value="Kiralık">Kiralık</option>
+                  </select>
+                </label>
+              </div>
+
+              <div class="admin-form-row">
+                <label>
+                  Fiyat
+                  <input id="price" name="price" type="text" required />
+                </label>
+                <label>
+                  Metrekare
+                  <input id="size" name="size" type="text" required />
+                </label>
+              </div>
+
+              <label for="area">Mahalle / Bölge</label>
+              <input id="area" name="area" type="text" required />
+
+              <label for="address">Açık Adres (harita için önerilir)</label>
+              <input
+                id="address"
+                name="address"
+                type="text"
+                placeholder="Örn: Hamidiye Mah. Atatürk Cd. No:12 Babaeski"
+              />
+
+              <div class="admin-form-row">
+                <label>
+                  Ada
+                  <input id="block" name="block" type="text" placeholder="Örn: 1229" />
+                </label>
+                <label>
+                  Parsel
+                  <input id="parcel" name="parcel" type="text" placeholder="Örn: 23" />
+                </label>
+              </div>
+
+              <label for="summary">Özet</label>
+              <textarea id="summary" name="summary" rows="3"></textarea>
+
+              <label for="image">Görsel URL veya Base64</label>
+              <input id="image" name="image" type="url" placeholder="https://..." />
+
+              <label for="listingImageFile">veya görsel yükle</label>
+              <input id="listingImageFile" name="listingImageFile" type="file" accept="image/*" />
+
+              <label for="detailUrl">İlan linki (opsiyonel)</label>
+              <input id="detailUrl" name="detailUrl" type="url" placeholder="https://..." />
+
+              <div class="admin-form-row">
+                <label>
+                  Enlem (lat)
+                  <input id="lat" name="lat" type="number" step="0.000001" placeholder="Boş bırak: adresten bul" />
+                </label>
+                <label>
+                  Boylam (lng)
+                  <input id="lng" name="lng" type="number" step="0.000001" placeholder="Boş bırak: adresten bul" />
+                </label>
+              </div>
+
+              <div class="admin-form-actions">
+                <button type="submit" class="btn btn-primary">Kaydet</button>
+                <button id="resetListingForm" type="button" class="btn btn-ghost">Formu Temizle</button>
+              </div>
+            </form>
+
+            <section class="admin-data-box">
+              <h3>Yedekleme / İçe Aktarma</h3>
+              <p>Panel verileri bu tarayıcıda tutulur. Dışa aktararak yedek alabilirsin.</p>
+              <div class="admin-form-actions">
+                <button id="exportListings" type="button" class="btn btn-ghost">JSON Dışa Aktar</button>
+                <label class="btn btn-ghost admin-upload-btn">
+                  JSON İçe Aktar
+                  <input id="importListingsInput" type="file" accept="application/json" hidden />
+                </label>
+              </div>
+            </section>
+
+            <section class="admin-data-box admin-map-box">
+              <h3>Haritadan Konum Seç</h3>
+              <p id="adminMapHint">Haritaya tıkla veya marker'ı sürükle.</p>
+              <div id="adminPickerMap" class="admin-picker-map" aria-label="Konum seçme haritası"></div>
+            </section>
+          </div>
+
+          <div class="admin-table-wrap">
+            <h3>Mevcut İlanlar</h3>
+            <div class="admin-table-scroll">
+              <table class="admin-table">
+                <thead>
+                  <tr>
+                    <th>Başlık</th>
+                    <th>İlçe</th>
+                    <th>Tür</th>
+                    <th>Fiyat</th>
+                    <th>Konum</th>
+                    <th>İşlem</th>
+                  </tr>
+                </thead>
+                <tbody id="listingTableBody"></tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+      </div>
+    </main>
+
+    <script
+      src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+      integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+      crossorigin=""
+      defer
+    ></script>
+    <script src="script.js?v=20260425c" defer></script>
+  </body>
+</html>

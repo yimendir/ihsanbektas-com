@@ -1,0 +1,22 @@
+{
+  "cleanUrls": true,
+  "trailingSlash": false,
+  "redirects": [
+    {
+      "source": "/index.html",
+      "destination": "/",
+      "permanent": true
+    },
+    {
+      "source": "/(.*)",
+      "has": [
+        {
+          "type": "host",
+          "value": "xn--ihsanbekta-n9b.com"
+        }
+      ],
+      "destination": "https://www.xn--ihsanbekta-n9b.com/$1",
+      "permanent": true
+    }
+  ]
+}

@@ -1,0 +1,5 @@
+User-agent: *
+Allow: /
+Host: www.xn--ihsanbekta-n9b.com
+
+Sitemap: https://www.xn--ihsanbekta-n9b.com/sitemap.xml
