@@ -1430,7 +1430,7 @@ function initAdminPanel() {
   }
 
   if (listingTableBody) {
-    listingTableBody.addEventListener("click", (event) => {
+    listingTableBody.addEventListener("click", async (event) => {
       const trigger = event.target.closest("button[data-action]");
       if (!trigger) return;
       const listingId = trigger.dataset.id;
