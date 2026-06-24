@@ -22,7 +22,7 @@
       integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
       crossorigin=""
     />
-    <link rel="stylesheet" href="styles.css?v=20260425b" />
+    <link rel="stylesheet" href="styles.css?v=20260624a" />
   </head>
 
   <body>
@@ -37,7 +37,6 @@
               src="assets/ihsan-bektas.jpg"
               alt="İhsan Bektaş profil fotoğrafı"
               loading="lazy"
-              onerror="this.remove()"
             />
             <span class="brand-initials" aria-hidden="true">İB</span>
           </span>
@@ -62,12 +61,11 @@
           <p class="lead">Bu panelden ilan ekleyebilir, düzenleyebilir ve silebilirsin.</p>
           <form id="adminLoginForm" class="admin-login-form" autocomplete="off">
             <label for="adminPassword">Şifre</label>
-            <input id="adminPassword" name="adminPassword" type="password" required />
+            <input id="adminPassword" name="adminPassword" type="password" autocomplete="current-password" required />
             <button type="submit" class="btn btn-primary">Giriş Yap</button>
             <p id="adminError" class="admin-error" role="alert"></p>
             <p class="admin-help">
-              Not: Bu panel demo amaçlı bir tarayıcı oturumu koruması kullanır. Gerçek yetkilendirme gerekiyorsa sunucu tarafında
-              kimlik doğrulama ekleyelim.
+              Not: Panel oturumu sunucu tarafından korunur. Ortak cihazlarda işlem bitince çıkış yap.
             </p>
           </form>
         </div>
@@ -151,7 +149,7 @@
               <textarea id="summary" name="summary" rows="3"></textarea>
 
               <label for="image">Görsel URL veya Base64</label>
-              <input id="image" name="image" type="url" placeholder="https://..." />
+              <input id="image" name="image" type="text" placeholder="https://... veya assets/gorsel.webp" />
 
               <label for="listingImageFile">veya görsel yükle</label>
               <input id="listingImageFile" name="listingImageFile" type="file" accept="image/*" />
@@ -223,6 +221,6 @@
       crossorigin=""
       defer
     ></script>
-    <script src="script.js?v=20260425c" defer></script>
+    <script src="script.js?v=20260624a" defer></script>
   </body>
 </html>

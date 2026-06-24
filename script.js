@@ -41,9 +41,8 @@ const districtViews = {
 };
 
 const LISTING_STORAGE_KEY = "emlak_agent_listings_v1";
-const ADMIN_SESSION_KEY = "emlak_agent_admin_session";
-const ADMIN_PASSWORD = "ib2026";
 const LISTINGS_API_PATH = "/api/listings";
+const ADMIN_AUTH_API_PATH = "/api/admin-auth";
 const DEFAULT_LISTINGS = [
   {
     id: "bbk-001",
@@ -100,6 +99,7 @@ const DEFAULT_LISTINGS = [
 let listingsData = sanitizeListingArray(DEFAULT_LISTINGS);
 let listingsSource = "fallback";
 let listingsReady = false;
+let lastPersistenceError = "";
 
 function createFallbackListing() {
   return {
@@ -141,6 +141,15 @@ function sanitizeText(value) {
   return String(value || "").trim();
 }
 
+function escapeHtml(value) {
+  return String(value || "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
 function normalizeSize(value) {
   const text = sanitizeText(value);
   if (!text) return "0 m²";
@@ -151,13 +160,27 @@ function normalizeSize(value) {
   return `${text} m²`;
 }
 
-function sanitizeUrl(value) {
+function sanitizeHttpUrl(value) {
   const text = sanitizeText(value);
   if (!text) return "";
-  if (text.startsWith("http://") || text.startsWith("https://") || text.startsWith("data:image/")) {
-    return text;
+  try {
+    const url = new URL(text);
+    if (url.protocol === "http:" || url.protocol === "https:") {
+      return url.toString();
+    }
+  } catch (error) {
+    return "";
   }
   return "";
+}
+
+function sanitizeImageUrl(value) {
+  const text = sanitizeText(value);
+  if (!text) return "";
+  if (text.length > 1500000) return "";
+  if (/^data:image\/(png|jpe?g|webp|gif);base64,[a-z0-9+/=\s]+$/i.test(text)) return text;
+  if (/^assets\/[a-z0-9._/-]+\.(png|jpe?g|webp|gif)$/i.test(text) && !text.includes("..")) return text;
+  return sanitizeHttpUrl(text);
 }
 
 function normalizeCoords(value) {
@@ -173,22 +196,23 @@ function normalizeCoords(value) {
 }
 
 function sanitizeListing(entry) {
+  const source = entry && typeof entry === "object" ? entry : {};
   const fallback = createFallbackListing();
   const clean = {
-    id: sanitizeText(entry.id) || fallback.id,
-    district: normalizeDistrict(entry.district),
-    type: normalizeType(entry.type),
-    title: sanitizeText(entry.title) || fallback.title,
-    price: sanitizeText(entry.price) || fallback.price,
-    size: normalizeSize(entry.size),
-    area: sanitizeText(entry.area) || fallback.area,
-    address: sanitizeText(entry.address),
-    block: sanitizeText(entry.block),
-    parcel: sanitizeText(entry.parcel),
-    summary: sanitizeText(entry.summary),
-    image: sanitizeUrl(entry.image),
-    detailUrl: sanitizeUrl(entry.detailUrl),
-    coords: normalizeCoords(entry.coords)
+    id: sanitizeText(source.id) || fallback.id,
+    district: normalizeDistrict(source.district),
+    type: normalizeType(source.type),
+    title: sanitizeText(source.title) || fallback.title,
+    price: sanitizeText(source.price) || fallback.price,
+    size: normalizeSize(source.size),
+    area: sanitizeText(source.area) || fallback.area,
+    address: sanitizeText(source.address),
+    block: sanitizeText(source.block),
+    parcel: sanitizeText(source.parcel),
+    summary: sanitizeText(source.summary),
+    image: sanitizeImageUrl(source.image),
+    detailUrl: sanitizeHttpUrl(source.detailUrl),
+    coords: normalizeCoords(source.coords)
   };
   return clean;
 }
@@ -240,10 +264,12 @@ async function persistListings(nextListings) {
   const clean = sanitizeListingArray(nextListings);
   listingsData = clean;
   saveListingsToStorage(clean);
+  lastPersistenceError = "";
 
   try {
     const response = await fetch(LISTINGS_API_PATH, {
       method: "PUT",
+      credentials: "same-origin",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ items: clean })
     });
@@ -251,8 +277,15 @@ async function persistListings(nextListings) {
       listingsSource = "github";
       return true;
     }
+    const payload = await response.json().catch(() => null);
+    if (response.status === 401) {
+      lastPersistenceError = "Oturum süresi doldu. Tekrar giriş yap.";
+      toggleAdminUI(false);
+    } else {
+      lastPersistenceError = payload && payload.error ? payload.error : "Kalıcı kayıt hatası.";
+    }
   } catch (error) {
-    // Keep localStorage fallback.
+    lastPersistenceError = "Sunucuya ulaşılamadı.";
   }
 
   listingsSource = "storage";
@@ -354,26 +387,38 @@ function renderListingCards(listings) {
 
   mapListingGrid.innerHTML = listings
     .map((listing) => {
+      const listingId = escapeHtml(listing.id);
+      const title = escapeHtml(listing.title);
+      const districtLabel = escapeHtml(getDistrictLabel(listing.district));
+      const type = escapeHtml(listing.type);
+      const area = escapeHtml(listing.area);
+      const size = escapeHtml(listing.size);
+      const summary = escapeHtml(listing.summary);
+      const price = escapeHtml(listing.price);
       const badgeClass = listing.type.toLocaleLowerCase("tr-TR").includes("kiralık")
         ? "map-badge is-rent"
         : "map-badge";
       const detailMarkup = listing.detailUrl
-        ? `<a class="map-listing-detail" href="${listing.detailUrl}" target="_blank" rel="noopener noreferrer">İlan Linki</a>`
+        ? `<a class="map-listing-detail" href="${escapeHtml(
+            listing.detailUrl
+          )}" target="_blank" rel="noopener noreferrer">İlan Linki</a>`
         : "";
       const mediaMarkup = listing.image
-        ? `<img class="map-listing-thumb map-listing-photo" src="${listing.image}" alt="${listing.title}" loading="lazy" />`
-        : `<div class="map-listing-thumb"><span>${getDistrictLabel(listing.district)} • Örnek Görsel</span></div>`;
+        ? `<img class="map-listing-thumb map-listing-photo" src="${escapeHtml(
+            listing.image
+          )}" alt="${title}" loading="lazy" />`
+        : `<div class="map-listing-thumb"><span>${districtLabel} • Örnek Görsel</span></div>`;
 
       return `
-        <article class="map-listing-card" data-listing-id="${listing.id}">
+        <article class="map-listing-card" data-listing-id="${listingId}">
           ${mediaMarkup}
           <div class="map-listing-head">
-            <h4>${listing.title}</h4>
-            <span class="${badgeClass}">${listing.type}</span>
+            <h4>${title}</h4>
+            <span class="${badgeClass}">${type}</span>
           </div>
-          <p class="map-listing-meta">${listing.area} • ${listing.size}</p>
-          ${listing.summary ? `<p class="map-listing-meta">${listing.summary}</p>` : ""}
-          <div class="map-listing-price">${listing.price}</div>
+          <p class="map-listing-meta">${area} • ${size}</p>
+          ${listing.summary ? `<p class="map-listing-meta">${summary}</p>` : ""}
+          <div class="map-listing-price">${price}</div>
           <div class="map-listing-actions">
             <button type="button">Haritada Göster</button>
             ${detailMarkup}
@@ -396,26 +441,38 @@ function renderCatalogCards(listings) {
 
   catalogGrid.innerHTML = listings
     .map((listing) => {
+      const listingId = escapeHtml(listing.id);
+      const title = escapeHtml(listing.title);
+      const districtLabel = escapeHtml(getDistrictLabel(listing.district));
+      const type = escapeHtml(listing.type);
+      const area = escapeHtml(listing.area);
+      const size = escapeHtml(listing.size);
+      const summary = escapeHtml(listing.summary);
+      const price = escapeHtml(listing.price);
       const badgeClass = getTypeKey(listing.type) === "kiralik" ? "map-badge is-rent" : "map-badge";
       const detailMarkup = listing.detailUrl
-        ? `<a class="catalog-detail-btn" href="${listing.detailUrl}" target="_blank" rel="noopener noreferrer">İlan Linki</a>`
+        ? `<a class="catalog-detail-btn" href="${escapeHtml(
+            listing.detailUrl
+          )}" target="_blank" rel="noopener noreferrer">İlan Linki</a>`
         : "";
       const mediaMarkup = listing.image
-        ? `<img class="map-listing-thumb map-listing-photo" src="${listing.image}" alt="${listing.title}" loading="lazy" />`
-        : `<div class="map-listing-thumb"><span>${getDistrictLabel(listing.district)} • Örnek Görsel</span></div>`;
+        ? `<img class="map-listing-thumb map-listing-photo" src="${escapeHtml(
+            listing.image
+          )}" alt="${title}" loading="lazy" />`
+        : `<div class="map-listing-thumb"><span>${districtLabel} • Örnek Görsel</span></div>`;
 
       return `
-        <article class="catalog-card" data-listing-id="${listing.id}">
+        <article class="catalog-card" data-listing-id="${listingId}">
           ${mediaMarkup}
           <div class="catalog-head">
-            <h3>${listing.title}</h3>
-            <span class="${badgeClass}">${listing.type}</span>
+            <h3>${title}</h3>
+            <span class="${badgeClass}">${type}</span>
           </div>
-          <p class="catalog-meta">${listing.area} • ${listing.size}</p>
-          ${listing.summary ? `<p class="catalog-meta">${listing.summary}</p>` : ""}
-          <p class="catalog-price">${listing.price}</p>
+          <p class="catalog-meta">${area} • ${size}</p>
+          ${listing.summary ? `<p class="catalog-meta">${summary}</p>` : ""}
+          <p class="catalog-price">${price}</p>
           <div class="catalog-actions">
-            <button type="button" class="catalog-map-btn" data-map-id="${listing.id}">Haritada Göster</button>
+            <button type="button" class="catalog-map-btn" data-map-id="${listingId}">Haritada Göster</button>
             ${detailMarkup}
             <a class="catalog-call-btn" href="tel:+905326032339">Hemen Ara</a>
           </div>
@@ -459,18 +516,21 @@ function createMarkerIcon(type) {
 
 function createPopupMarkup(listing) {
   const detailLink = listing.detailUrl
-    ? `<p><a href="${listing.detailUrl}" target="_blank" rel="noopener noreferrer">İlan Detayı</a></p>`
+    ? `<p><a href="${escapeHtml(listing.detailUrl)}" target="_blank" rel="noopener noreferrer">İlan Detayı</a></p>`
     : "";
-  const cadastre = listing.block || listing.parcel ? `<p>Ada/Parsel: ${listing.block || "-"} / ${listing.parcel || "-"}</p>` : "";
+  const cadastre =
+    listing.block || listing.parcel
+      ? `<p>Ada/Parsel: ${escapeHtml(listing.block || "-")} / ${escapeHtml(listing.parcel || "-")}</p>`
+      : "";
 
   return `
     <div class="map-popup">
-      <h4>${listing.title}</h4>
-      <p>${listing.type} • ${listing.size}</p>
-      <p>${listing.area}</p>
-      ${listing.address ? `<p>${listing.address}</p>` : ""}
+      <h4>${escapeHtml(listing.title)}</h4>
+      <p>${escapeHtml(listing.type)} • ${escapeHtml(listing.size)}</p>
+      <p>${escapeHtml(listing.area)}</p>
+      ${listing.address ? `<p>${escapeHtml(listing.address)}</p>` : ""}
       ${cadastre}
-      <p><strong>${listing.price}</strong></p>
+      <p><strong>${escapeHtml(listing.price)}</strong></p>
       ${detailLink}
     </div>
   `;
@@ -844,7 +904,7 @@ function populateCatalogDistrictOptions() {
 
   const options = ['<option value="all">Tüm Bölgeler</option>'];
   sortedDistricts.forEach((district) => {
-    options.push(`<option value="${district}">${getDistrictLabel(district)}</option>`);
+    options.push(`<option value="${escapeHtml(district)}">${escapeHtml(getDistrictLabel(district))}</option>`);
   });
   catalogDistrictFilter.innerHTML = options.join("");
 
@@ -861,24 +921,28 @@ function renderSpotlightCards() {
   const spotlightListings = getListings().slice(0, 6);
   spotlightTrack.innerHTML = spotlightListings
     .map((listing) => {
-      const district = getDistrictLabel(listing.district);
+      const district = escapeHtml(getDistrictLabel(listing.district));
+      const title = escapeHtml(listing.title);
+      const type = escapeHtml(listing.type);
+      const price = escapeHtml(listing.price);
+      const meta = escapeHtml([listing.size, listing.area, listing.summary].filter(Boolean).join(" | "));
       const imageMarkup = listing.image
-        ? `<img class="spotlight-photo" src="${listing.image}" alt="${listing.title}" loading="lazy" />`
+        ? `<img class="spotlight-photo" src="${escapeHtml(listing.image)}" alt="${title}" loading="lazy" />`
         : '<div class="spotlight-photo spotlight-photo-empty"><span>Görsel eklenecek</span></div>';
-      const detailHref = listing.detailUrl || "ilanlar.html";
+      const detailHref = escapeHtml(listing.detailUrl || "ilanlar.html");
       return `
-        <article class="spotlight-card spotlight-theme-babaeski" data-listing-id="${listing.id}">
+        <article class="spotlight-card spotlight-theme-babaeski" data-listing-id="${escapeHtml(listing.id)}">
           <div class="spotlight-card-visual spotlight-photo-visual">
             ${imageMarkup}
             <div class="spotlight-card-overlay">
-              <p class="chip">${listing.type}</p>
+              <p class="chip">${type}</p>
               <span class="spotlight-district">${district}</span>
             </div>
           </div>
-          <h3>${listing.title}</h3>
-          <p class="spotlight-meta">${[listing.size, listing.area, listing.summary].filter(Boolean).join(" | ")}</p>
+          <h3>${title}</h3>
+          <p class="spotlight-meta">${meta}</p>
           <div class="spotlight-bottom">
-            <strong>${listing.price}</strong>
+            <strong>${price}</strong>
             <a href="${detailHref}" target="_blank" rel="noopener noreferrer">Detayları Gör</a>
           </div>
         </article>
@@ -1169,14 +1233,18 @@ function renderAdminTable() {
     .map(
       (listing) => `
         <tr>
-          <td>${listing.title}</td>
-          <td>${getDistrictLabel(listing.district)}</td>
-          <td>${listing.type}</td>
-          <td>${listing.price}</td>
-          <td>${listing.coords[0].toFixed(4)}, ${listing.coords[1].toFixed(4)}</td>
+          <td>${escapeHtml(listing.title)}</td>
+          <td>${escapeHtml(getDistrictLabel(listing.district))}</td>
+          <td>${escapeHtml(listing.type)}</td>
+          <td>${escapeHtml(listing.price)}</td>
+          <td>${escapeHtml(listing.coords[0].toFixed(4))}, ${escapeHtml(listing.coords[1].toFixed(4))}</td>
           <td class="admin-table-actions">
-            <button type="button" class="admin-btn admin-btn-light" data-action="edit" data-id="${listing.id}">Düzenle</button>
-            <button type="button" class="admin-btn admin-btn-danger" data-action="delete" data-id="${listing.id}">Sil</button>
+            <button type="button" class="admin-btn admin-btn-light" data-action="edit" data-id="${escapeHtml(
+              listing.id
+            )}">Düzenle</button>
+            <button type="button" class="admin-btn admin-btn-danger" data-action="delete" data-id="${escapeHtml(
+              listing.id
+            )}">Sil</button>
           </td>
         </tr>
       `
@@ -1197,23 +1265,44 @@ function updateAdminSourceHint() {
   setAdminMessage("İlanlar yedek veriden yükleniyor.", "");
 }
 
-function getAdminSession() {
+async function fetchAdminSession() {
   try {
-    return window.sessionStorage.getItem(ADMIN_SESSION_KEY) === "1";
+    const response = await fetch(ADMIN_AUTH_API_PATH, { cache: "no-store", credentials: "same-origin" });
+    if (!response.ok) return { configured: false, authenticated: false };
+    const payload = await response.json();
+    return {
+      configured: payload.configured === true,
+      authenticated: payload.authenticated === true
+    };
   } catch (error) {
-    return false;
+    return { configured: false, authenticated: false };
   }
 }
 
-function setAdminSession(isLoggedIn) {
+async function loginAdmin(password) {
   try {
-    if (isLoggedIn) {
-      window.sessionStorage.setItem(ADMIN_SESSION_KEY, "1");
-    } else {
-      window.sessionStorage.removeItem(ADMIN_SESSION_KEY);
-    }
+    const response = await fetch(ADMIN_AUTH_API_PATH, {
+      method: "POST",
+      credentials: "same-origin",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ password })
+    });
+    const payload = await response.json().catch(() => null);
+    return {
+      ok: response.ok,
+      status: response.status,
+      error: payload && payload.error ? payload.error : ""
+    };
   } catch (error) {
-    // Sessiz geç.
+    return { ok: false, status: 0, error: "Sunucuya ulaşılamadı." };
+  }
+}
+
+async function logoutAdmin() {
+  try {
+    await fetch(ADMIN_AUTH_API_PATH, { method: "DELETE", credentials: "same-origin" });
+  } catch (error) {
+    // Oturum yerelde kapatılacağı için ağ hatasını sessiz geçiyoruz.
   }
 }
 
@@ -1224,6 +1313,10 @@ function toggleAdminUI(isLoggedIn) {
   if (adminPanel) {
     adminPanel.hidden = !isLoggedIn;
   }
+}
+
+function getPersistenceFailureMessage(fallback) {
+  return lastPersistenceError || fallback;
 }
 
 function readListingFormValues() {
@@ -1264,7 +1357,9 @@ function importListingsFromFile(file) {
       renderAdminTable();
       refreshListingViews();
       setAdminMessage(
-        saved ? "İlanlar içe aktarıldı ve kalıcı depoya yazıldı." : "İlanlar içe aktarıldı ama kalıcı depoya yazılamadı.",
+        saved
+          ? "İlanlar içe aktarıldı ve kalıcı depoya yazıldı."
+          : getPersistenceFailureMessage("İlanlar içe aktarıldı ama kalıcı depoya yazılamadı."),
         saved ? "success" : "error"
       );
     } catch (error) {
@@ -1274,26 +1369,33 @@ function importListingsFromFile(file) {
   reader.readAsText(file, "utf-8");
 }
 
-function initAdminPanel() {
+async function initAdminPanel() {
   if (!adminLoginForm || !adminPanel) return;
 
-  const loggedIn = getAdminSession();
-  toggleAdminUI(loggedIn);
+  const session = await fetchAdminSession();
+  toggleAdminUI(session.authenticated);
 
-  if (loggedIn) {
+  if (!session.configured && adminError) {
+    adminError.textContent = "Admin girişi için Vercel ortam değişkenleri eksik.";
+  }
+
+  if (session.authenticated) {
     renderAdminTable();
     initAdminPickerMap();
   }
 
-  adminLoginForm.addEventListener("submit", (event) => {
+  adminLoginForm.addEventListener("submit", async (event) => {
     event.preventDefault();
     const password = adminPasswordInput ? adminPasswordInput.value.trim() : "";
-    if (password !== ADMIN_PASSWORD) {
-      if (adminError) adminError.textContent = "Şifre hatalı.";
+    const result = await loginAdmin(password);
+    if (!result.ok) {
+      if (adminError) {
+        adminError.textContent =
+          result.status === 503 ? "Admin girişi sunucuda yapılandırılmamış." : "Şifre hatalı veya oturum açılamadı.";
+      }
       return;
     }
     if (adminError) adminError.textContent = "";
-    setAdminSession(true);
     toggleAdminUI(true);
     renderAdminTable();
     initAdminPickerMap();
@@ -1302,8 +1404,8 @@ function initAdminPanel() {
   });
 
   if (adminLogoutBtn) {
-    adminLogoutBtn.addEventListener("click", () => {
-      setAdminSession(false);
+    adminLogoutBtn.addEventListener("click", async () => {
+      await logoutAdmin();
       toggleAdminUI(false);
       setAdminMessage("", "");
     });
@@ -1391,8 +1493,8 @@ function initAdminPanel() {
             ? "İlan güncellendi ve kalıcı depoya yazıldı."
             : "Yeni ilan eklendi ve kalıcı depoya yazıldı."
           : existingIndex >= 0
-            ? "İlan güncellendi ama kalıcı depoya yazılamadı."
-            : "Yeni ilan eklendi ama kalıcı depoya yazılamadı.",
+            ? getPersistenceFailureMessage("İlan güncellendi ama kalıcı depoya yazılamadı.")
+            : getPersistenceFailureMessage("Yeni ilan eklendi ama kalıcı depoya yazılamadı."),
         saved ? "success" : "error"
       );
     });
@@ -1402,6 +1504,16 @@ function initAdminPanel() {
     listingImageFile.addEventListener("change", async () => {
       const file = listingImageFile.files && listingImageFile.files[0];
       if (!file) return;
+      if (!/^image\/(png|jpe?g|webp|gif)$/i.test(file.type || "")) {
+        setAdminMessage("Sadece PNG, JPG, WEBP veya GIF görsel yüklenebilir.", "error");
+        listingImageFile.value = "";
+        return;
+      }
+      if (file.size > 1200000) {
+        setAdminMessage("Görsel 1.2 MB'dan küçük olmalı. Büyük görseller için URL kullan.", "error");
+        listingImageFile.value = "";
+        return;
+      }
       const dataUrl = await new Promise((resolve, reject) => {
         const reader = new FileReader();
         reader.onload = () => resolve(String(reader.result || ""));
@@ -1449,11 +1561,15 @@ function initAdminPanel() {
       if (action === "delete") {
         const ok = window.confirm(`"${target.title}" ilanını silmek istiyor musun?`);
         if (!ok) return;
+        if (items.length <= 1) {
+          setAdminMessage("Son ilan panelden silinemez. Önce yeni bir ilan ekle.", "error");
+          return;
+        }
         const saved = await persistListings(items.filter((item) => item.id !== listingId));
         renderAdminTable();
         refreshListingViews();
         setAdminMessage(
-          saved ? "İlan silindi ve kalıcı depoya yazıldı." : "İlan silindi ama kalıcı depoya yazılamadı.",
+          saved ? "İlan silindi ve kalıcı depoya yazıldı." : getPersistenceFailureMessage("İlan silindi ama kalıcı depoya yazılamadı."),
           saved ? "success" : "error"
         );
       }
@@ -1500,7 +1616,7 @@ async function bootstrapListings() {
   initCatalog();
   initHeroMap();
   initSpotlightCarousel();
-  initAdminPanel();
+  await initAdminPanel();
   updateAdminSourceHint();
 }
 

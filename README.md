@@ -20,18 +20,19 @@ Bu repo, `ihsanbektaş.com` sitesinin statik kaynaklarını ve deploy ayarların
 4. Vercel bu repo üzerinden otomatik deploy eder.
 
 ## Veri Kaynağı
-- İlanlar `script.js` içindeki `DEFAULT_LISTINGS` içinde tutulur.
-- Harita verisi ve admin paneli tarayıcı içinde çalışır.
-- Uzun vadede gerçek veri gerekiyorsa bunu API veya veritabanına taşımak gerekir.
+- İlanlar `data/listings.json` içinde tutulur ve `/api/listings` üzerinden GitHub'a yazılır.
+- Public sayfalar ilanları API'den okur, API erişilemezse tarayıcıdaki son yedek veriye düşer.
+- Admin paneli yazma işlemleri için server-side oturum kontrolü kullanır.
 
 ## Notlar
-- Admin paneldeki oturum koruması demo seviyesindedir.
-- Gerçek gizli veri veya yetkilendirme gerekiyorsa sunucu tarafı kurulum yapalım.
 - İlanların kalıcı kaydı için Vercel ortam değişkenleri gerekir:
   - `GITHUB_OWNER=yimendir`
   - `GITHUB_REPO=ihsanbektas-com`
   - `GITHUB_BRANCH=main`
   - `GITHUB_TOKEN=<repo contents yazma yetkili token>`
+- Admin paneli için Vercel ortam değişkenleri gerekir:
+  - `ADMIN_PASSWORD=<panel giriş şifresi>`
+  - `ADMIN_SESSION_SECRET=<uzun rastgele gizli değer>` (yoksa `GITHUB_TOKEN` oturum imzası için kullanılır)
 
 ## Teknik SEO
 - Canonical etiketleri tanımlı.
