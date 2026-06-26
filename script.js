@@ -281,6 +281,11 @@ async function persistListings(nextListings) {
       body: JSON.stringify({ items: clean })
     });
     if (response.ok) {
+      const payload = await response.json().catch(() => null);
+      if (payload && Array.isArray(payload.items)) {
+        listingsData = sanitizeListingArray(payload.items);
+        saveListingsToStorage(listingsData);
+      }
       listingsSource = "github";
       return true;
     }
@@ -1508,8 +1513,8 @@ async function initAdminPanel() {
         listingImageFile.value = "";
         return;
       }
-      if (file.size > 1200000) {
-        setAdminMessage("Görsel 1.2 MB'dan küçük olmalı. Büyük görseller için URL kullan.", "error");
+      if (file.size > 2200000) {
+        setAdminMessage("Görsel 2 MB'dan küçük olmalı. Büyük görseller için URL kullan.", "error");
         listingImageFile.value = "";
         return;
       }

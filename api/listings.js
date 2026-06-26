@@ -1,9 +1,13 @@
 const { requireAdminSession } = require("../lib/admin-auth");
+const crypto = require("crypto");
 
 const LISTINGS_FILE = "data/listings.json";
+const LISTING_ASSET_DIR = "assets/listings";
+const LISTING_BACKUP_DIR = "backups/listings";
 const MAX_LISTINGS = 100;
 const MAX_TEXT_LENGTH = 700;
 const MAX_DATA_IMAGE_LENGTH = 4000000;
+const DATA_IMAGE_PATTERN = /^data:image\/(png|jpe?g|webp|gif);base64,([a-z0-9+/=\s]+)$/i;
 
 function readEnv() {
   return {
@@ -26,18 +30,22 @@ function createGitHubHeaders(withAuth) {
   return headers;
 }
 
-async function readCurrentFile(withAuth) {
+async function readRepoFile(path, withAuth) {
   const { owner, repo, token, branch } = readEnv();
   if (!owner || !repo) return null;
   if (withAuth && !token) return null;
 
-  const url = `https://api.github.com/repos/${owner}/${repo}/contents/${LISTINGS_FILE}?ref=${branch}`;
+  const url = `https://api.github.com/repos/${owner}/${repo}/contents/${path}?ref=${branch}`;
   const response = await fetch(url, {
     headers: createGitHubHeaders(withAuth)
   });
 
   if (!response.ok) return null;
   return response.json();
+}
+
+async function readCurrentFile(withAuth) {
+  return readRepoFile(LISTINGS_FILE, withAuth);
 }
 
 async function readCurrentFileText(current) {
@@ -97,6 +105,47 @@ async function writeCurrentFile(nextData, sha) {
   return response.json();
 }
 
+async function writeRepoBase64File(path, content, message, sha) {
+  const { owner, repo, token, branch } = readEnv();
+  if (!owner || !repo || !token) {
+    throw new Error("GitHub storage is not configured.");
+  }
+
+  const url = `https://api.github.com/repos/${owner}/${repo}/contents/${path}`;
+  const body = { message, content, branch };
+  if (sha) body.sha = sha;
+
+  const response = await fetch(url, {
+    method: "PUT",
+    headers: {
+      ...createGitHubHeaders(true),
+      "content-type": "application/json"
+    },
+    body: JSON.stringify(body)
+  });
+
+  if (!response.ok) {
+    const detail = await response.text();
+    throw new Error(`GitHub file write failed: ${response.status} ${detail}`);
+  }
+
+  return response.json();
+}
+
+function createBackupPath() {
+  const stamp = new Date().toISOString().replace(/[:.]/g, "-");
+  return `${LISTING_BACKUP_DIR}/listings-${stamp}.json`;
+}
+
+async function writeListingsBackup(currentText) {
+  if (!currentText) return null;
+  return writeRepoBase64File(
+    createBackupPath(),
+    Buffer.from(currentText).toString("base64"),
+    "Backup listings data before update"
+  );
+}
+
 function sanitizeText(value, maxLength = MAX_TEXT_LENGTH) {
   return String(value || "").trim().slice(0, maxLength);
 }
@@ -153,7 +202,7 @@ function sanitizeImageUrl(value) {
   if (!text) return "";
   if (text.length > MAX_DATA_IMAGE_LENGTH) return "";
 
-  if (/^data:image\/(png|jpe?g|webp|gif);base64,[a-z0-9+/=\s]+$/i.test(text)) {
+  if (DATA_IMAGE_PATTERN.test(text)) {
     return text;
   }
 
@@ -187,6 +236,61 @@ function sanitizeListing(entry) {
 function sanitizeListingArray(items) {
   if (!Array.isArray(items)) return [];
   return items.slice(0, MAX_LISTINGS).map(sanitizeListing);
+}
+
+function slugify(value) {
+  return String(value || "listing")
+    .toLocaleLowerCase("tr-TR")
+    .replace(/ğ/g, "g")
+    .replace(/ü/g, "u")
+    .replace(/ş/g, "s")
+    .replace(/ı/g, "i")
+    .replace(/ö/g, "o")
+    .replace(/ç/g, "c")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 60) || "listing";
+}
+
+function parseDataImage(value) {
+  const match = String(value || "").trim().match(DATA_IMAGE_PATTERN);
+  if (!match) return null;
+
+  const mime = match[1].toLocaleLowerCase("tr-TR");
+  const base64 = match[2].replace(/\s+/g, "");
+  const extension = mime === "jpeg" ? "jpg" : mime;
+  const buffer = Buffer.from(base64, "base64");
+  if (!buffer.length || buffer.length > Math.floor(MAX_DATA_IMAGE_LENGTH * 0.75)) return null;
+
+  return { base64, buffer, extension };
+}
+
+async function materializeListingImages(items) {
+  const nextItems = [];
+
+  for (const item of items) {
+    const image = parseDataImage(item.image);
+    if (!image) {
+      nextItems.push(item);
+      continue;
+    }
+
+    const hash = crypto.createHash("sha256").update(image.buffer).digest("hex").slice(0, 14);
+    const fileName = `${slugify(item.id || item.title)}-${hash}.${image.extension}`;
+    const path = `${LISTING_ASSET_DIR}/${fileName}`;
+    const existing = await readRepoFile(path, true);
+
+    if (!existing || !existing.sha) {
+      await writeRepoBase64File(path, image.base64, `Add listing image ${fileName}`);
+    }
+
+    nextItems.push({
+      ...item,
+      image: path
+    });
+  }
+
+  return nextItems;
 }
 
 function getBody(req) {
@@ -236,12 +340,14 @@ module.exports = async (req, res) => {
       return res.status(400).json({ ok: false, error: "Listings array cannot be empty." });
     }
 
-    const cleanItems = sanitizeListingArray(items);
+    const cleanItems = await materializeListingImages(sanitizeListingArray(items));
     if (!cleanItems.length) {
       return res.status(400).json({ ok: false, error: "Listings array has no valid items." });
     }
 
     try {
+      const currentText = await readCurrentFileText(current);
+      await writeListingsBackup(currentText).catch(() => null);
       await writeCurrentFile(cleanItems, current.sha);
       return res.status(200).json({ ok: true, items: cleanItems });
     } catch (error) {
