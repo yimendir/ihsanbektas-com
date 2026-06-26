@@ -184,7 +184,7 @@ function sanitizeHttpUrl(value) {
 function sanitizeImageUrl(value) {
   const text = sanitizeText(value);
   if (!text) return "";
-  if (text.length > 1500000) return "";
+  if (text.length > 4000000) return "";
   if (/^data:image\/(png|jpe?g|webp|gif);base64,[a-z0-9+/=\s]+$/i.test(text)) return text;
   if (/^assets\/[a-z0-9._/-]+\.(png|jpe?g|webp|gif)$/i.test(text) && !text.includes("..")) return text;
   return sanitizeHttpUrl(text);

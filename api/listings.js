@@ -3,7 +3,7 @@ const { requireAdminSession } = require("../lib/admin-auth");
 const LISTINGS_FILE = "data/listings.json";
 const MAX_LISTINGS = 100;
 const MAX_TEXT_LENGTH = 700;
-const MAX_DATA_IMAGE_LENGTH = 1500000;
+const MAX_DATA_IMAGE_LENGTH = 4000000;
 
 function readEnv() {
   return {
@@ -14,21 +14,59 @@ function readEnv() {
   };
 }
 
-async function readCurrentFile() {
+function createGitHubHeaders(withAuth) {
+  const { token } = readEnv();
+  const headers = {
+    Accept: "application/vnd.github+json",
+    "X-GitHub-Api-Version": "2022-11-28"
+  };
+  if (withAuth && token) {
+    headers.Authorization = `Bearer ${token}`;
+  }
+  return headers;
+}
+
+async function readCurrentFile(withAuth) {
   const { owner, repo, token, branch } = readEnv();
-  if (!owner || !repo || !token) return null;
+  if (!owner || !repo) return null;
+  if (withAuth && !token) return null;
 
   const url = `https://api.github.com/repos/${owner}/${repo}/contents/${LISTINGS_FILE}?ref=${branch}`;
   const response = await fetch(url, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-      Accept: "application/vnd.github+json",
-      "X-GitHub-Api-Version": "2022-11-28"
-    }
+    headers: createGitHubHeaders(withAuth)
   });
 
   if (!response.ok) return null;
   return response.json();
+}
+
+async function readCurrentFileText(current) {
+  if (!current) return null;
+
+  if (current.content) {
+    return Buffer.from(current.content, "base64").toString("utf8");
+  }
+
+  if (current.git_url) {
+    const blobResponse = await fetch(current.git_url, {
+      headers: createGitHubHeaders(false)
+    });
+    if (blobResponse.ok) {
+      const blob = await blobResponse.json();
+      if (blob && blob.content) {
+        return Buffer.from(blob.content, "base64").toString("utf8");
+      }
+    }
+  }
+
+  if (current.download_url) {
+    const rawResponse = await fetch(current.download_url);
+    if (rawResponse.ok) {
+      return rawResponse.text();
+    }
+  }
+
+  return null;
 }
 
 async function writeCurrentFile(nextData, sha) {
@@ -168,13 +206,13 @@ module.exports = async (req, res) => {
   res.setHeader("X-Content-Type-Options", "nosniff");
 
   if (req.method === "GET") {
-    const current = await readCurrentFile();
-    if (!current || !current.content) {
+    const current = await readCurrentFile(false);
+    const text = await readCurrentFileText(current);
+    if (!text) {
       return res.status(200).json({ ok: true, source: "fallback", items: null });
     }
 
     try {
-      const text = Buffer.from(current.content, "base64").toString("utf8");
       return res.status(200).json({ ok: true, source: "github", items: sanitizeListingArray(JSON.parse(text)) });
     } catch (error) {
       return res.status(500).json({ ok: false, error: "Stored listings JSON is invalid." });
@@ -184,7 +222,7 @@ module.exports = async (req, res) => {
   if (req.method === "PUT" || req.method === "POST") {
     if (!requireAdminSession(req, res)) return;
 
-    const current = await readCurrentFile();
+    const current = await readCurrentFile(true);
     if (!current || !current.sha) {
       return res.status(503).json({ ok: false, error: "GitHub storage is not configured." });
     }
