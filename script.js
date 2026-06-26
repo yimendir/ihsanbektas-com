@@ -148,6 +148,36 @@ function sanitizeText(value) {
   return String(value || "").trim();
 }
 
+function normalizePrice(value) {
+  const text = sanitizeText(value).slice(0, 80);
+  if (!text) return "";
+
+  const candidate = text
+    .replace(/₺/g, "")
+    .replace(/\b(?:tl|try|türk lirası|turk lirasi)\b/giu, "")
+    .trim();
+  if (!candidate) return "";
+
+  if (/[a-zçğıöşü]/iu.test(candidate)) {
+    return text;
+  }
+
+  let numericText = candidate.replace(/\s+/g, "");
+  const decimalMatch = numericText.match(/([.,])(\d{1,2})$/);
+  if (decimalMatch) {
+    const integerPart = numericText.slice(0, decimalMatch.index);
+    const integerDigits = integerPart.replace(/\D/g, "");
+    if (/[.,]/.test(integerPart) || integerDigits.length > 3) {
+      numericText = integerPart;
+    }
+  }
+
+  const digits = numericText.replace(/[^\d]/g, "").replace(/^0+(?=\d)/, "");
+  if (!digits || digits.length > 15) return text;
+
+  return `₺${digits.replace(/\B(?=(\d{3})+(?!\d))/g, ".")}`;
+}
+
 function escapeHtml(value) {
   return String(value || "")
     .replace(/&/g, "&amp;")
@@ -210,7 +240,7 @@ function sanitizeListing(entry) {
     district: normalizeDistrict(source.district),
     type: normalizeType(source.type),
     title: sanitizeText(source.title) || fallback.title,
-    price: sanitizeText(source.price) || fallback.price,
+    price: normalizePrice(source.price) || fallback.price,
     size: normalizeSize(source.size),
     area: sanitizeText(source.area) || fallback.area,
     address: sanitizeText(source.address),
@@ -1428,6 +1458,11 @@ async function initAdminPanel() {
     }
     if (listingForm.elements.lng) {
       listingForm.elements.lng.addEventListener("change", syncFromInputs);
+    }
+    if (listingForm.elements.price) {
+      listingForm.elements.price.addEventListener("blur", () => {
+        listingForm.elements.price.value = normalizePrice(listingForm.elements.price.value);
+      });
     }
 
     listingForm.addEventListener("submit", async (event) => {

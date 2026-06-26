@@ -168,6 +168,36 @@ function normalizeType(value) {
   return type.includes("kiralık") || type.includes("kiralik") ? "Kiralık" : "Satılık";
 }
 
+function normalizePrice(value) {
+  const text = sanitizeText(value, 80);
+  if (!text) return "";
+
+  const candidate = text
+    .replace(/₺/g, "")
+    .replace(/\b(?:tl|try|türk lirası|turk lirasi)\b/giu, "")
+    .trim();
+  if (!candidate) return "";
+
+  if (/[a-zçğıöşü]/iu.test(candidate)) {
+    return text;
+  }
+
+  let numericText = candidate.replace(/\s+/g, "");
+  const decimalMatch = numericText.match(/([.,])(\d{1,2})$/);
+  if (decimalMatch) {
+    const integerPart = numericText.slice(0, decimalMatch.index);
+    const integerDigits = integerPart.replace(/\D/g, "");
+    if (/[.,]/.test(integerPart) || integerDigits.length > 3) {
+      numericText = integerPart;
+    }
+  }
+
+  const digits = numericText.replace(/[^\d]/g, "").replace(/^0+(?=\d)/, "");
+  if (!digits || digits.length > 15) return text;
+
+  return `₺${digits.replace(/\B(?=(\d{3})+(?!\d))/g, ".")}`;
+}
+
 function normalizeSize(value) {
   const text = sanitizeText(value, 80);
   if (!text) return "0 m²";
@@ -219,7 +249,7 @@ function sanitizeListing(entry) {
     district: normalizeDistrict(entry && entry.district),
     type: normalizeType(entry && entry.type),
     title: sanitizeText(entry && entry.title, 180) || "Yeni İlan",
-    price: sanitizeText(entry && entry.price, 80) || "Fiyat bilgisi girilmedi",
+    price: normalizePrice(entry && entry.price) || "Fiyat bilgisi girilmedi",
     size: normalizeSize(entry && entry.size),
     area: sanitizeText(entry && entry.area, 140) || "Bölge bilgisi girilmedi",
     address: sanitizeText(entry && entry.address, 260),
