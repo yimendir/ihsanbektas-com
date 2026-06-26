@@ -1,0 +1,116 @@
+[
+  {
+    "id": "listing-1782505738834",
+    "district": "EDİRNE-UZUNKÖPRÜ",
+    "type": "Satılık",
+    "title": "UZUNKÖPRÜ ÇALI KÖYE YAKIN SATILIK TARLA",
+    "price": "450.000",
+    "size": "1.926 m²",
+    "area": "ÇALI KÖY",
+    "address": "EDİRNE İLİ UZUNKÖPRÜ İLÇESİ ÇALI KÖYÜ",
+    "block": "149",
+    "parcel": "2",
+    "summary": "",
+    "image": "assets/listings/listing-1782505738834-adb0f84c5d5879.jpg",
+    "detailUrl": "",
+    "coords": [
+      41.288356,
+      26.596613
+    ]
+  },
+  {
+    "id": "listing-1782473575409",
+    "district": "EDİRNE- UZUNKÖPRÜ",
+    "type": "Satılık",
+    "title": "ÇALIKÖY' de ÇİFTLİK YAPIMINA UYGUN KADASTRO YOLU OLAN SATILIK ARAZİ",
+    "price": "2.000.000",
+    "size": "6.419 m²",
+    "area": "EDİRNE İLİ UZUNKÖPRÜ İLÇESİ ÇALI KÖYÜ",
+    "address": "UZUNKÖPRÜ ÇALI KÖYÜ",
+    "block": "142",
+    "parcel": "5",
+    "summary": "",
+    "image": "assets/listings/listing-1782473575409-d619f92fa85526.jpg",
+    "detailUrl": "https://www.sahibinden.com/ilan/emlak-arsa-satilik-uzunkopru-calikoy-mera-kenari-kadastro-yoluna-cephe-kw-plus-1313821414/detay/",
+    "coords": [
+      41.287066,
+      26.598865
+    ]
+  },
+  {
+    "id": "listing-1782471503636",
+    "district": "BALIKESİR-MARMARA",
+    "type": "Satılık",
+    "title": "AVŞA ADASI MAVİ KOY'a YAKIN SATILIK VİLLA",
+    "price": "10700000",
+    "size": "160 m²",
+    "area": "BALIKESİR İLİ MARMARA İLÇESİ DENİZ MAHALLESİ",
+    "address": "BALIKESİR MARMARA İLÇESİ DENİZ MAHALLESİ",
+    "block": "",
+    "parcel": "3738",
+    "summary": "",
+    "image": "assets/listings/listing-1782471503636-39203c15e6dd9c.jpg",
+    "detailUrl": "https://www.sahibinden.com/ilan/emlak-konut-satilik-avsa-adasi-mavi-koy-a-cok-yakin-satilik-villa-kwplus-1323012441/detay/",
+    "coords": [
+      40.52408,
+      27.508457
+    ]
+  },
+  {
+    "id": "bbk-001",
+    "district": "Babaeski",
+    "type": "Satılık",
+    "title": "KW Plus'tan Yüksek Potansiyelli Satılık Sanayi İmarlı Arsa",
+    "price": "₺92.000.000",
+    "size": "24.713 m²",
+    "area": "Cumhuriyet Mahallesi",
+    "address": "Cumhuriyet Mahallesi, Babaeski, Kırklareli, Türkiye",
+    "block": "",
+    "parcel": "",
+    "summary": "Sanayi imarlı | Emsal 0.50 | Gabari 12.50 | Müstakil tapulu",
+    "image": "assets/arsa-babaeski-cumhuriyet.jpg",
+    "detailUrl": "https://www.sahibinden.com/ilan/emlak-arsa-satilik-kw-plus-tan-yuksek-potansiyelli-satilik-sanayi-imarli-arsa-1274493174/detay",
+    "coords": [
+      41.443631,
+      27.06487
+    ]
+  },
+  {
+    "id": "bbk-003",
+    "district": "Babaeski",
+    "type": "Satılık",
+    "title": "KW Plus Karacaoğlan Köyü'nde Satılık Arsa",
+    "price": "₺2.100.000",
+    "size": "1225 m²",
+    "area": "Karacaoğlan Köyü",
+    "address": "Karacaoğlan Köyü, Babaeski, Kırklareli, Türkiye",
+    "block": "",
+    "parcel": "",
+    "summary": "",
+    "image": "assets/listings/bbk-003-e5d68ca87b9f6c.jpg",
+    "detailUrl": "https://www.sahibinden.com/ilan/emlak-arsa-satilik-satilik-koy-arsasai-babaeski-karacaoglan-koyu-kw-plus-1305018920/detay/",
+    "coords": [
+      41.5266,
+      27.0853
+    ]
+  },
+  {
+    "id": "bbk-004",
+    "district": "Babaeski",
+    "type": "Satılık",
+    "title": "Merkezi yerde Satılık 3+1  Daire",
+    "price": "₺3.650.000",
+    "size": "140 (Brüt) m²",
+    "area": "Hamidiye Mahallesi",
+    "address": "Hamidiye Mahallesi, Babaeski, Kırklareli, Türkiye",
+    "block": "",
+    "parcel": "",
+    "summary": "3+1 | 120 m² net | 4. kat | Açık otopark | Hürriyet Sitesi 1",
+    "image": "assets/listings/bbk-004-f783825ec78a90.jpg",
+    "detailUrl": "https://www.sahibinden.com/ilan/emlak-konut-satilik-merkezde-heykele-yakin-3-plus1-satilik-daire-kw-plus-1290460555/detay/",
+    "coords": [
+      41.434685,
+      27.088785
+    ]
+  }
+]
