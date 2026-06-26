@@ -1,5 +1,24 @@
 [
   {
+    "id": "listing-1782505738834",
+    "district": "EDİRNE-UZUNKÖPRÜ",
+    "type": "Satılık",
+    "title": "UZUNKÖPRÜ ÇALI KÖYE YAKIN SATILIK TARLA",
+    "price": "450.000",
+    "size": "1.926 m²",
+    "area": "ÇALI KÖY",
+    "address": "EDİRNE İLİ UZUNKÖPRÜ İLÇESİ ÇALI KÖYÜ",
+    "block": "149",
+    "parcel": "2",
+    "summary": "",
+    "image": "assets/listings/listing-1782505738834-adb0f84c5d5879.jpg",
+    "detailUrl": "",
+    "coords": [
+      41.288356,
+      26.596613
+    ]
+  },
+  {
     "id": "listing-1782473575409",
     "district": "EDİRNE- UZUNKÖPRÜ",
     "type": "Satılık",
