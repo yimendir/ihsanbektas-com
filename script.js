@@ -37,7 +37,10 @@ const districtViews = {
   all: { center: [41.606, 27.266], zoom: 10 },
   babaeski: { center: [41.6761, 27.2186], zoom: 13 },
   luleburgaz: { center: [41.4058, 27.3552], zoom: 13 },
-  kirklareli: { center: [41.7351, 27.2252], zoom: 13 }
+  kirklareli: { center: [41.7351, 27.2252], zoom: 13 },
+  Babaeski: { center: [41.6761, 27.2186], zoom: 13 },
+  Lüleburgaz: { center: [41.4058, 27.3552], zoom: 13 },
+  Kırklareli: { center: [41.7351, 27.2252], zoom: 13 }
 };
 
 const LISTING_STORAGE_KEY = "emlak_agent_listings_v1";
@@ -121,13 +124,17 @@ function createFallbackListing() {
 }
 
 function normalizeDistrict(value) {
-  const district = String(value || "")
+  const district = String(value || "").trim().slice(0, 140);
+  const key = district
     .toLocaleLowerCase("tr-TR")
     .trim();
-  if (district === "babaeski" || district === "luleburgaz" || district === "kirklareli") {
+  if (key === "babaeski") return "Babaeski";
+  if (key === "luleburgaz" || key === "lüleburgaz") return "Lüleburgaz";
+  if (key === "kirklareli" || key === "kırklareli") return "Kırklareli";
+  if (district) {
     return district;
   }
-  return "babaeski";
+  return "Babaeski";
 }
 
 function normalizeType(value) {
@@ -366,10 +373,7 @@ function getFilteredListings(district) {
 }
 
 function getDistrictLabel(district) {
-  if (district === "babaeski") return "Babaeski";
-  if (district === "luleburgaz") return "Lüleburgaz";
-  if (district === "kirklareli") return "Kırklareli";
-  return "Kırklareli";
+  return normalizeDistrict(district);
 }
 
 function getTypeKey(type) {
@@ -1158,14 +1162,9 @@ function initAdminPickerMap() {
 
 function buildAddressQuery(address, area, district, block, parcel) {
   const cadastralPart = block || parcel ? `ada ${sanitizeText(block)} parsel ${sanitizeText(parcel)}` : "";
-  const parts = [
-    cadastralPart,
-    sanitizeText(address),
-    sanitizeText(area),
-    getDistrictLabel(district),
-    "Kırklareli",
-    "Türkiye"
-  ].filter(Boolean);
+  const parts = [cadastralPart, sanitizeText(address), sanitizeText(area), getDistrictLabel(district), "Türkiye"].filter(
+    Boolean
+  );
   return parts.join(", ");
 }
 

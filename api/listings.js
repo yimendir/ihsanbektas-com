@@ -64,13 +64,14 @@ function sanitizeText(value, maxLength = MAX_TEXT_LENGTH) {
 }
 
 function normalizeDistrict(value) {
-  const district = String(value || "")
+  const district = String(value || "").trim().slice(0, 140);
+  const key = district
     .toLocaleLowerCase("tr-TR")
     .trim();
-  if (district === "babaeski" || district === "luleburgaz" || district === "kirklareli") {
-    return district;
-  }
-  return "babaeski";
+  if (key === "babaeski") return "Babaeski";
+  if (key === "luleburgaz" || key === "lüleburgaz") return "Lüleburgaz";
+  if (key === "kirklareli" || key === "kırklareli") return "Kırklareli";
+  return district || "Babaeski";
 }
 
 function normalizeType(value) {
