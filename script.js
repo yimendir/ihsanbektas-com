@@ -46,6 +46,9 @@ const districtViews = {
 const LISTING_STORAGE_KEY = "emlak_agent_listings_v1";
 const LISTINGS_API_PATH = "/api/listings";
 const ADMIN_AUTH_API_PATH = "/api/admin-auth";
+const LISTING_IMAGE_DIRECT_UPLOAD_BYTES = 2200000;
+const LISTING_IMAGE_MAX_DATA_URL_LENGTH = 3800000;
+const LISTING_IMAGE_MAX_DIMENSION = 1600;
 const DEFAULT_LISTINGS = [
   {
     id: "bbk-001",
@@ -218,6 +221,118 @@ function sanitizeImageUrl(value) {
   if (/^data:image\/(png|jpe?g|webp|gif);base64,[a-z0-9+/=\s]+$/i.test(text)) return text;
   if (/^assets\/[a-z0-9._/-]+\.(png|jpe?g|webp|gif)$/i.test(text) && !text.includes("..")) return text;
   return sanitizeHttpUrl(text);
+}
+
+function readFileAsDataUrl(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result || ""));
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+function isSupportedOriginalImage(file) {
+  return /^image\/(png|jpe?g|webp|gif)$/i.test(file.type || "");
+}
+
+function isLikelyImageFile(file) {
+  const type = String(file.type || "").toLocaleLowerCase("tr-TR");
+  const name = String(file.name || "").toLocaleLowerCase("tr-TR");
+  return type.startsWith("image/") || /\.(png|jpe?g|webp|gif|heic|heif)$/i.test(name);
+}
+
+function loadImageElement(file) {
+  return new Promise((resolve, reject) => {
+    const image = new Image();
+    const url = URL.createObjectURL(file);
+    const cleanup = () => URL.revokeObjectURL(url);
+    image.onload = () => {
+      cleanup();
+      resolve(image);
+    };
+    image.onerror = () => {
+      cleanup();
+      reject(new Error("Image could not be decoded."));
+    };
+    image.src = url;
+  });
+}
+
+function canvasToJpegBlob(canvas, quality) {
+  return new Promise((resolve) => {
+    if (!canvas.toBlob) {
+      resolve(null);
+      return;
+    }
+    canvas.toBlob(resolve, "image/jpeg", quality);
+  });
+}
+
+async function compressImageFile(file) {
+  const image = await loadImageElement(file);
+  const sourceWidth = image.naturalWidth || image.width;
+  const sourceHeight = image.naturalHeight || image.height;
+  if (!sourceWidth || !sourceHeight) return "";
+
+  const baseScale = Math.min(1, LISTING_IMAGE_MAX_DIMENSION / Math.max(sourceWidth, sourceHeight));
+  const attempts = [
+    { scale: baseScale, quality: 0.84 },
+    { scale: baseScale * 0.85, quality: 0.76 },
+    { scale: baseScale * 0.72, quality: 0.68 },
+    { scale: baseScale * 0.6, quality: 0.6 }
+  ];
+
+  for (const attempt of attempts) {
+    const width = Math.max(1, Math.round(sourceWidth * attempt.scale));
+    const height = Math.max(1, Math.round(sourceHeight * attempt.scale));
+    const canvas = document.createElement("canvas");
+    canvas.width = width;
+    canvas.height = height;
+    const context = canvas.getContext("2d");
+    if (!context) continue;
+
+    context.drawImage(image, 0, 0, width, height);
+    const blob = await canvasToJpegBlob(canvas, attempt.quality);
+    const dataUrl = blob
+      ? await readFileAsDataUrl(blob)
+      : canvas.toDataURL("image/jpeg", attempt.quality);
+
+    if (dataUrl && dataUrl.length <= LISTING_IMAGE_MAX_DATA_URL_LENGTH) {
+      return dataUrl;
+    }
+  }
+
+  return "";
+}
+
+async function prepareListingImageUpload(file) {
+  if (!file) return { dataUrl: "", message: "Görsel seçilmedi.", type: "error" };
+  if (!isLikelyImageFile(file)) {
+    return { dataUrl: "", message: "Sadece fotoğraf dosyası yüklenebilir.", type: "error" };
+  }
+
+  if (isSupportedOriginalImage(file) && file.size <= LISTING_IMAGE_DIRECT_UPLOAD_BYTES) {
+    const dataUrl = await readFileAsDataUrl(file).catch(() => "");
+    if (dataUrl && sanitizeImageUrl(dataUrl)) {
+      return { dataUrl, message: "Görsel yüklendi. Kaydet'e basmayı unutma.", type: "success" };
+    }
+  }
+
+  const dataUrl = await compressImageFile(file).catch(() => "");
+  if (dataUrl && sanitizeImageUrl(dataUrl)) {
+    return {
+      dataUrl,
+      message: "Görsel mobil uyumlu şekilde hazırlandı. Kaydet'e basmayı unutma.",
+      type: "success"
+    };
+  }
+
+  return {
+    dataUrl: "",
+    message: "Bu görsel okunamadı. iPhone'da HEIC yerine JPG için Ayarlar > Kamera > Biçimler > En Uyumlu seçeneğini kullan.",
+    type: "error"
+  };
 }
 
 function normalizeCoords(value) {
@@ -1542,28 +1657,14 @@ async function initAdminPanel() {
   if (listingImageFile && listingForm) {
     listingImageFile.addEventListener("change", async () => {
       const file = listingImageFile.files && listingImageFile.files[0];
-      if (!file) return;
-      if (!/^image\/(png|jpe?g|webp|gif)$/i.test(file.type || "")) {
-        setAdminMessage("Sadece PNG, JPG, WEBP veya GIF görsel yüklenebilir.", "error");
-        listingImageFile.value = "";
-        return;
-      }
-      if (file.size > 2200000) {
-        setAdminMessage("Görsel 2 MB'dan küçük olmalı. Büyük görseller için URL kullan.", "error");
-        listingImageFile.value = "";
-        return;
-      }
-      const dataUrl = await new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve(String(reader.result || ""));
-        reader.onerror = reject;
-        reader.readAsDataURL(file);
-      }).catch(() => "");
-      if (dataUrl) {
-        listingForm.elements.image.value = dataUrl;
-        setAdminMessage("Görsel yüklendi. Kaydet'e basmayı unutma.", "success");
+      setAdminMessage("Görsel hazırlanıyor...", "success");
+      const result = await prepareListingImageUpload(file);
+      if (result.dataUrl) {
+        listingForm.elements.image.value = result.dataUrl;
+        setAdminMessage(result.message, result.type);
       } else {
-        setAdminMessage("Görsel yüklenemedi.", "error");
+        listingImageFile.value = "";
+        setAdminMessage(result.message, result.type);
       }
     });
   }
