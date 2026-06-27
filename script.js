@@ -106,6 +106,7 @@ let listingsData = sanitizeListingArray(DEFAULT_LISTINGS);
 let listingsSource = "fallback";
 let listingsReady = false;
 let lastPersistenceError = "";
+let pendingListingImageDataUrl = "";
 
 function createFallbackListing() {
   return {
@@ -1238,6 +1239,13 @@ function setAdminMessage(message, kind) {
   if (kind === "error") adminStatus.classList.add("is-error");
 }
 
+function clearPendingListingImageUpload() {
+  pendingListingImageDataUrl = "";
+  if (listingImageFile) {
+    listingImageFile.value = "";
+  }
+}
+
 function getListingsSourceLabel() {
   if (listingsSource === "github") return "Kalıcı kayıt: GitHub";
   if (listingsSource === "storage") return "Geçici kayıt: tarayıcı belleği";
@@ -1342,6 +1350,7 @@ async function geocodeFromAddress(query) {
 
 function fillFormWithListing(listing) {
   if (!listingForm) return;
+  clearPendingListingImageUpload();
   listingForm.elements.id.value = listing.id;
   listingForm.elements.title.value = listing.title;
   listingForm.elements.district.value = listing.district;
@@ -1485,7 +1494,7 @@ function readListingFormValues() {
     block: listingForm.elements.block ? listingForm.elements.block.value : "",
     parcel: listingForm.elements.parcel ? listingForm.elements.parcel.value : "",
     summary: listingForm.elements.summary.value,
-    image: listingForm.elements.image.value,
+    image: pendingListingImageDataUrl || listingForm.elements.image.value,
     detailUrl: listingForm.elements.detailUrl.value,
     coords: [lat, lng]
   });
@@ -1638,6 +1647,7 @@ async function initAdminPanel() {
       refreshListingViews();
       listingForm.reset();
       listingForm.elements.id.value = "";
+      clearPendingListingImageUpload();
       if (adminMapHint) {
         adminMapHint.textContent = "Haritaya tıkla veya marker'ı sürükle.";
       }
@@ -1654,16 +1664,23 @@ async function initAdminPanel() {
     });
   }
 
+  if (listingForm && listingForm.elements.image) {
+    listingForm.elements.image.addEventListener("input", () => {
+      clearPendingListingImageUpload();
+    });
+  }
+
   if (listingImageFile && listingForm) {
     listingImageFile.addEventListener("change", async () => {
       const file = listingImageFile.files && listingImageFile.files[0];
       setAdminMessage("Görsel hazırlanıyor...", "success");
       const result = await prepareListingImageUpload(file);
       if (result.dataUrl) {
-        listingForm.elements.image.value = result.dataUrl;
+        pendingListingImageDataUrl = result.dataUrl;
+        listingForm.elements.image.value = "Yeni görsel seçildi; kaydedince güncellenecek.";
         setAdminMessage(result.message, result.type);
       } else {
-        listingImageFile.value = "";
+        clearPendingListingImageUpload();
         setAdminMessage(result.message, result.type);
       }
     });
@@ -1673,6 +1690,7 @@ async function initAdminPanel() {
     resetListingFormBtn.addEventListener("click", () => {
       listingForm.reset();
       listingForm.elements.id.value = "";
+      clearPendingListingImageUpload();
       if (adminMapHint) {
         adminMapHint.textContent = "Haritaya tıkla veya marker'ı sürükle.";
       }
