@@ -112,24 +112,5 @@
       41.5266,
       27.0853
     ]
-  },
-  {
-    "id": "bbk-004",
-    "district": "Babaeski",
-    "type": "Satılık",
-    "title": "Merkezi yerde Satılık 3+1  Daire (EİDS YETKİLİDİR)",
-    "price": "₺3.650.000",
-    "size": "140 (Brüt) m²",
-    "area": "Hamidiye Mahallesi",
-    "address": "Hamidiye Mahallesi, Babaeski, Kırklareli, Türkiye",
-    "block": "",
-    "parcel": "",
-    "summary": "3+1 | 120 m² net | 4. kat | Açık otopark | Hürriyet Sitesi 1",
-    "image": "assets/listings/bbk-004-f783825ec78a90.jpg",
-    "detailUrl": "https://www.sahibinden.com/ilan/emlak-konut-satilik-merkezde-heykele-yakin-3-plus1-satilik-daire-kw-plus-1290460555/detay/",
-    "coords": [
-      41.434685,
-      27.088785
-    ]
   }
 ]
