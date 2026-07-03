@@ -330,6 +330,14 @@ a {
   object-fit: contain;
 }
 
+.hero-credential {
+  margin: 10px 0 0 12px;
+  max-width: 58ch;
+  color: #35504a;
+  font-size: 0.96rem;
+  font-weight: 700;
+}
+
 .hero-panel {
   background: linear-gradient(160deg, #fff9ef, #fffef9);
   border: 1px solid var(--line);
