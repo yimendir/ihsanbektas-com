@@ -1024,8 +1024,7 @@ function renderSpotlightCards() {
 
   const spotlightListings = getListings().slice(0, 6);
   if (!spotlightListings.length) {
-    spotlightTrack.innerHTML =
-      '<article class="spotlight-card"><h3>Sahibinden.com ilanlarım</h3><p class="spotlight-meta">Kendi ilanlarımı sahibinden.com üzerinde görüntülemek için aşağıdaki bağlantıyı kullanabilirsiniz.</p><div class="spotlight-bottom"><a href="https://shbd.io/s/N1YLRFJz" target="_blank" rel="noopener noreferrer">Buraya tıklayın</a></div></article>';
+    spotlightTrack.innerHTML = "";
     return;
   }
 
