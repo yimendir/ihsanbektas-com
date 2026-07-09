@@ -50,58 +50,7 @@ const ADMIN_AUTH_API_PATH = "/api/admin-auth";
 const LISTING_IMAGE_DIRECT_UPLOAD_BYTES = 2200000;
 const LISTING_IMAGE_MAX_DATA_URL_LENGTH = 3800000;
 const LISTING_IMAGE_MAX_DIMENSION = 1600;
-const DEFAULT_LISTINGS = [
-  {
-    id: "bbk-001",
-    district: "babaeski",
-    type: "Satılık",
-    title: "KW Plus'tan Yüksek Potansiyelli Satılık Sanayi İmarlı Arsa",
-    price: "₺99.000.000",
-    size: "24.713 m²",
-    area: "Cumhuriyet Mahallesi",
-    address: "Cumhuriyet Mahallesi, Babaeski, Kırklareli, Türkiye",
-    block: "",
-    parcel: "",
-    summary: "Sanayi imarlı | Emsal 0.50 | Gabari 12.50 | Müstakil tapulu",
-    image: "assets/arsa-babaeski-cumhuriyet.jpg",
-    detailUrl:
-      "https://www.sahibinden.com/ilan/emlak-arsa-satilik-kw-plus-tan-yuksek-potansiyelli-satilik-sanayi-imarli-arsa-1274493174/detay",
-    coords: [41.6766, 27.2191]
-  },
-  {
-    id: "bbk-003",
-    district: "babaeski",
-    type: "Satılık",
-    title: "KW Plus Karacaoğlan Köyü'nde Satılık Tarla",
-    price: "₺2.200.000",
-    size: "10.242 m²",
-    area: "Karacaoğlan Köyü",
-    address: "Karacaoğlan Köyü, Babaeski, Kırklareli, Türkiye",
-    block: "",
-    parcel: "",
-    summary: "Arazi | m² fiyatı ₺215 | Müstakil tapulu | Krediye uygun değil",
-    image: "",
-    detailUrl:
-      "https://www.sahibinden.com/ilan/emlak-arsa-satilik-kw-plus-karacaoglan-koyunde-satilik-tarla-1305146484/detay",
-    coords: [41.5266, 27.0853]
-  },
-  {
-    id: "bbk-004",
-    district: "babaeski",
-    type: "Satılık",
-    title: "Anadolu Lisesi ve Bilim Sanat Merkezi Yanında Satılık Daire",
-    price: "₺3.600.000",
-    size: "140 m² (Brüt)",
-    area: "Hamidiye Mahallesi",
-    address: "Hamidiye Mahallesi, Babaeski, Kırklareli, Türkiye",
-    block: "",
-    parcel: "",
-    summary: "3+1 | 120 m² net | 4. kat | Açık otopark | Hürriyet Sitesi 1",
-    image: "",
-    detailUrl: "",
-    coords: [41.6737, 27.2208]
-  }
-];
+const DEFAULT_LISTINGS = [];
 
 let listingsData = sanitizeListingArray(DEFAULT_LISTINGS);
 let listingsSource = "fallback";
@@ -379,12 +328,12 @@ function sanitizeListingArray(items) {
 function loadListingsFromStorage() {
   try {
     const raw = window.localStorage.getItem(LISTING_STORAGE_KEY);
-    if (!raw) return sanitizeListingArray(DEFAULT_LISTINGS);
+    if (!raw) return [];
     const parsed = JSON.parse(raw);
     const cleaned = sanitizeListingArray(parsed);
-    return cleaned.length ? cleaned : sanitizeListingArray(DEFAULT_LISTINGS);
+    return cleaned;
   } catch (error) {
-    return sanitizeListingArray(DEFAULT_LISTINGS);
+    return [];
   }
 }
 
@@ -1082,6 +1031,12 @@ function renderSpotlightCards() {
   if (!spotlightTrack) return;
 
   const spotlightListings = getListings().slice(0, 6);
+  if (!spotlightListings.length) {
+    spotlightTrack.innerHTML =
+      '<article class="spotlight-card"><h3>İlanlar yayından kaldırıldı</h3><p class="spotlight-meta">Güncel portföy bilgisi için İhsan Bektaş ile iletişime geçebilirsiniz.</p></article>';
+    return;
+  }
+
   spotlightTrack.innerHTML = spotlightListings
     .map((listing) => {
       const district = escapeHtml(getDistrictLabel(listing.district));
@@ -1729,10 +1684,6 @@ async function initAdminPanel() {
       if (action === "delete") {
         const ok = window.confirm(`"${target.title}" ilanını silmek istiyor musun?`);
         if (!ok) return;
-        if (items.length <= 1) {
-          setAdminMessage("Son ilan panelden silinemez. Önce yeni bir ilan ekle.", "error");
-          return;
-        }
         const saved = await persistListings(items.filter((item) => item.id !== listingId));
         renderAdminTable();
         refreshListingViews();
@@ -1770,7 +1721,7 @@ async function initAdminPanel() {
 
 async function bootstrapListings() {
   const apiListings = await loadListingsFromApi();
-  if (apiListings && apiListings.length) {
+  if (apiListings) {
     listingsData = apiListings;
     saveListingsToStorage(apiListings);
   } else {

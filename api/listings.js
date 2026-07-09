@@ -3,7 +3,6 @@ const crypto = require("crypto");
 
 const LISTINGS_FILE = "data/listings.json";
 const LISTING_ASSET_DIR = "assets/listings";
-const LISTING_BACKUP_DIR = "backups/listings";
 const MAX_LISTINGS = 100;
 const MAX_TEXT_LENGTH = 700;
 const MAX_DATA_IMAGE_LENGTH = 4000000;
@@ -130,20 +129,6 @@ async function writeRepoBase64File(path, content, message, sha) {
   }
 
   return response.json();
-}
-
-function createBackupPath() {
-  const stamp = new Date().toISOString().replace(/[:.]/g, "-");
-  return `${LISTING_BACKUP_DIR}/listings-${stamp}.json`;
-}
-
-async function writeListingsBackup(currentText) {
-  if (!currentText) return null;
-  return writeRepoBase64File(
-    createBackupPath(),
-    Buffer.from(currentText).toString("base64"),
-    "Backup listings data before update"
-  );
 }
 
 function sanitizeText(value, maxLength = MAX_TEXT_LENGTH) {
@@ -366,18 +351,12 @@ module.exports = async (req, res) => {
     if (!items) {
       return res.status(400).json({ ok: false, error: "Request body must include items array." });
     }
-    if (!items.length) {
-      return res.status(400).json({ ok: false, error: "Listings array cannot be empty." });
-    }
-
     const cleanItems = await materializeListingImages(sanitizeListingArray(items));
-    if (!cleanItems.length) {
+    if (items.length && !cleanItems.length) {
       return res.status(400).json({ ok: false, error: "Listings array has no valid items." });
     }
 
     try {
-      const currentText = await readCurrentFileText(current);
-      await writeListingsBackup(currentText).catch(() => null);
       await writeCurrentFile(cleanItems, current.sha);
       return res.status(200).json({ ok: true, items: cleanItems });
     } catch (error) {
