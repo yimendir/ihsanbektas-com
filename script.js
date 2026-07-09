@@ -27,7 +27,6 @@ const listingImageFile = document.getElementById("listingImageFile");
 const resetListingFormBtn = document.getElementById("resetListingForm");
 const listingTableBody = document.getElementById("listingTableBody");
 const listingCountStat = document.getElementById("listingCountStat");
-const personalListingsCounter = document.getElementById("personalListingsCounter");
 const exportListingsBtn = document.getElementById("exportListings");
 const importListingsInput = document.getElementById("importListingsInput");
 const adminStatus = document.getElementById("adminStatus");
@@ -348,13 +347,6 @@ function saveListingsToStorage(nextListings) {
 
 function getListings() {
   return listingsData;
-}
-
-function updatePersonalListingsCounter() {
-  if (!personalListingsCounter) return;
-  const count = getListings().length;
-  personalListingsCounter.dataset.counter = String(count);
-  personalListingsCounter.textContent = String(count);
 }
 
 async function loadListingsFromApi() {
@@ -1170,8 +1162,6 @@ function initSpotlightCarousel() {
 }
 
 function refreshListingViews() {
-  updatePersonalListingsCounter();
-
   if (catalogDistrictFilter) {
     populateCatalogDistrictOptions();
   }
@@ -1730,7 +1720,6 @@ async function bootstrapListings() {
   }
 
   listingsReady = true;
-  updatePersonalListingsCounter();
   populateCatalogDistrictOptions();
   initListingMap();
   initCatalog();
