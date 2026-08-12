@@ -1,5 +1,24 @@
 [
   {
+    "id": "listing-1786521624697",
+    "district": "EDİRNE- UZUNKÖPRÜ",
+    "type": "Satılık",
+    "title": "UZUKÖPRÜ-ÇALIKÖYE YAKIN SATILIK TARLA",
+    "price": "₺450.000",
+    "size": "1926 m²",
+    "area": "ÇALIKÖY",
+    "address": "EDİRNE-UZUNKÖPRÜ-ÇALIKÖY",
+    "block": "149",
+    "parcel": "2",
+    "summary": "",
+    "image": "assets/listings/listing-1786521624697-a510e1a715c7d3.jpg",
+    "detailUrl": "https://www.sahibinden.com/ilan/emlak-arsa-satilik-kw-plus,uzunkopru-cali-koye-yakin-satilik-tarla-1313851099/detay/",
+    "coords": [
+      41.286679,
+      26.597313
+    ]
+  },
+  {
     "id": "listing-1786521245934",
     "district": "KIRKLARELİ-BABAESKİ",
     "type": "Satılık",
