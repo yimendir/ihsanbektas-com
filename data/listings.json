@@ -1,17 +1,17 @@
 [
   {
     "id": "listing-1786521624697",
-    "district": "EDİRNE- UZUNKÖPRÜ",
+    "district": "-",
     "type": "Satılık",
-    "title": "UZUKÖPRÜ-ÇALIKÖYE YAKIN SATILIK TARLA (EİDS YETKİLİ)",
-    "price": "₺400.000",
-    "size": "1926 m²",
-    "area": "ÇALIKÖY",
+    "title": "EİDS YETKİLİ İLAN 1",
+    "price": "-",
+    "size": "- m²",
+    "area": "-",
     "address": "EDİRNE-UZUNKÖPRÜ-ÇALIKÖY",
-    "block": "149",
-    "parcel": "2",
+    "block": "-",
+    "parcel": "-",
     "summary": "",
-    "image": "assets/listings/listing-1786521624697-a510e1a715c7d3.jpg",
+    "image": "https://raw.githubusercontent.com/yimendir/ihsanbektas-com/main/assets/listings/listing-1786521624697-a510e1a715c7d3.jpg",
     "detailUrl": "https://www.sahibinden.com/ilan/emlak-arsa-satilik-kw-plus,uzunkopru-cali-koye-yakin-satilik-tarla-1313851099/detay/",
     "coords": [
       41.286679,
@@ -30,7 +30,7 @@
     "block": "",
     "parcel": "",
     "summary": "",
-    "image": "assets/listings/listing-1786521245934-eddd7d8c822b16.jpg",
+    "image": "https://raw.githubusercontent.com/yimendir/ihsanbektas-com/main/assets/listings/listing-1786521245934-eddd7d8c822b16.jpg",
     "detailUrl": "https://www.sahibinden.com/ilan/emlak-konut-satilik-site-icerisinde-oturuma-hazir-yeni-satilik-2-plus1-daire-kwplus-1333495175/detay/",
     "coords": [
       41.440911,
@@ -49,7 +49,7 @@
     "block": "1229",
     "parcel": "23",
     "summary": "",
-    "image": "assets/listings/listing-1786520273272-ce591272861a55.jpg",
+    "image": "https://raw.githubusercontent.com/yimendir/ihsanbektas-com/main/assets/listings/listing-1786520273272-ce591272861a55.jpg",
     "detailUrl": "https://www.sahibinden.com/ilan/emlak-arsa-satilik-yatirimlik-firsat-satilik-sanayi-ve-depolama-imarli-arsa-kw-plus-1274493174/detay/",
     "coords": [
       41.445501,
@@ -68,7 +68,7 @@
     "block": "142",
     "parcel": "5",
     "summary": "",
-    "image": "assets/listings/listing-1785934231930-d619f92fa85526.jpg",
+    "image": "https://raw.githubusercontent.com/yimendir/ihsanbektas-com/main/assets/listings/listing-1785934231930-d619f92fa85526.jpg",
     "detailUrl": "https://www.sahibinden.com/ilan/emlak-arsa-satilik-uzunkopru-calikoy-de-koye-yakin-tarla-1313821414/detay/",
     "coords": [
       41.286623,
@@ -87,7 +87,7 @@
     "block": "115",
     "parcel": "33",
     "summary": "",
-    "image": "assets/listings/listing-1785933850756-e5d68ca87b9f6c.jpg",
+    "image": "https://raw.githubusercontent.com/yimendir/ihsanbektas-com/main/assets/listings/listing-1785933850756-e5d68ca87b9f6c.jpg",
     "detailUrl": "https://www.sahibinden.com/ilan/emlak-arsa-satilik-koy-icinde-satilik-arsa-babaeski-karacaoglan-koyu-kw-plus-1305018920/detay/",
     "coords": [
       41.53217,
@@ -106,7 +106,7 @@
     "block": "1255",
     "parcel": "3",
     "summary": "",
-    "image": "assets/listings/listing-1785931617702-c8afde6a716e92.jpg",
+    "image": "https://raw.githubusercontent.com/yimendir/ihsanbektas-com/main/assets/listings/listing-1785931617702-c8afde6a716e92.jpg",
     "detailUrl": "https://www.sahibinden.com/ilan/emlak-arsa-satilik-babaeski-cumhuriyet-mahallesinde-satilik-arsa-kw-plus-1329546101/detay/",
     "coords": [
       41.440905,
@@ -125,7 +125,7 @@
     "block": "",
     "parcel": "",
     "summary": "",
-    "image": "assets/listings/listing-1785055972458-39203c15e6dd9c.jpg",
+    "image": "https://raw.githubusercontent.com/yimendir/ihsanbektas-com/main/assets/listings/listing-1785055972458-39203c15e6dd9c.jpg",
     "detailUrl": "https://www.sahibinden.com/ilan/emlak-konut-satilik-avsa-adasi-deniz-mahallesinde-satilik-villa-kwplus-1323012441/detay/",
     "coords": [
       40.528786,
